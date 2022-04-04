@@ -1,0 +1,14 @@
+*&---------------------------------------------------------------------*
+*& Include          ZTRANSPORT_DATA_TOP
+*&---------------------------------------------------------------------*
+REPORT ZTRANSPORT_DATA.
+
+TABLES: ZZJ1BNFDOC.
+
+DATA: gt_zzj1bnfdoc TYPE TABLE OF zzj1bnfdoc.
+
+DATA: GT_SAIDA TYPE TABLE OF J_1BNFDOC.
+
+DATA: gs_zzj1bnfdoc TYPE zzj1bnfdoc.
+
+DATA: gv_answer.
