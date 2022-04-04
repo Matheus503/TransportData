@@ -1,0 +1,377 @@
+*&---------------------------------------------------------------------*
+*& Report ZTRANSPORT_DATA
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+INCLUDE ZTRANSPORT_DATA_TOP.
+INCLUDE ZTRANSPORT_DATA_SCR.
+
+START-OF-SELECTION.
+  PERFORM F_SELECIONA_DADOS.
+*&---------------------------------------------------------------------*
+*& Form F_SELECIONA_DADOS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM F_SELECIONA_DADOS .
+
+   SELECT *
+      FROM ZZJ1BNFDOC
+      INTO TABLE GT_ZZJ1BNFDOC
+     WHERE DOCNUM IN S_DOCNUM
+     AND   DOCDAT IN S_DOCDAT.
+
+    IF SY-SUBRC IS INITIAL.
+
+        PERFORM F_ENVIA_DADOS.
+
+    ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form F_ENVIA_DADOS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM F_ENVIA_DADOS .
+
+  DATA: LS_ZZJ1BNFDOC TYPE ZZJ1BNFDOC.
+  DATA: lv_answer.
+  DATA: LV_CRE_TIMESTAMP TYPE J_1BNFDOC-CRE_TIMESTAMP.
+
+    FIELD-SYMBOLS: <FS_SAIDA> TYPE J_1BNFDOC.
+
+
+  CLEAR: gv_answer.
+    CALL FUNCTION 'POPUP_TO_CONFIRM' " Funcao de confirmacao
+      EXPORTING
+        titlebar              = text-t01 "Confirmação
+        text_question         = text-t05 "'Deseja realmente restaurar os dados?'
+        text_button_1         = text-t03 "'Sim'
+        icon_button_1         = 'ICON_CHECKED'
+        text_button_2         = text-t04 "'Não'
+        icon_button_2         = 'ICON_INCOMPLETE'
+        display_cancel_button = ' '
+      IMPORTING
+        answer                = gv_answer
+      EXCEPTIONS
+        text_not_found        = 1
+        OTHERS                = 2.
+    IF gv_answer EQ '2'.
+      RETURN.
+    ENDIF.
+
+    LOOP AT GT_ZZJ1BNFDOC INTO LS_ZZJ1BNFDOC.
+
+      APPEND INITIAL LINE TO GT_SAIDA ASSIGNING <FS_SAIDA>.
+
+"##### AJUSTE DE DATAS #######
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-DOCDAT WITH ``.
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-PSTDAT WITH ``.
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-CREDAT WITH ``.
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-CHADAT WITH ``.
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-CANDAT WITH ``.
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-ZFBDT  WITH ``.
+"AJUSTA DOCDAT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                  = LS_ZZJ1BNFDOC-DOCDAT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-DOCDAT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+"AJUSTA PSTDAT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                  = LS_ZZJ1BNFDOC-PSTDAT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-PSTDAT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+"AJUSTA CREDAT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                  = LS_ZZJ1BNFDOC-CREDAT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-CREDAT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+"AJUSTA CREDAT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                 = LS_ZZJ1BNFDOC-CHADAT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-CHADAT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+"AJUSTA CANDAT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                 = LS_ZZJ1BNFDOC-CANDAT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-CANDAT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+"AJUSTA ZFBDT
+      CALL FUNCTION 'CONVERT_DATE_TO_INTERNAL'
+        EXPORTING
+          DATE_EXTERNAL                 = LS_ZZJ1BNFDOC-ZFBDT
+       IMPORTING
+         DATE_INTERNAL                  = LS_ZZJ1BNFDOC-ZFBDT
+       EXCEPTIONS
+         DATE_EXTERNAL_IS_INVALID       = 1
+         OTHERS                         = 2.
+          IF SY-SUBRC <> 0.
+*            * Implement suitable error handling here
+          ENDIF.
+"##### AJUSTE DE DATAS #######
+
+"##### AJUSTE DE VALORES #######
+      REPLACE ALL OCCURRENCES OF `,` IN LS_ZZJ1BNFDOC-BRGEW   WITH ``.
+      REPLACE ALL OCCURRENCES OF `.` IN LS_ZZJ1BNFDOC-BRGEW   WITH ``.
+
+
+      REPLACE ALL OCCURRENCES OF `,` IN LS_ZZJ1BNFDOC-NTGEW   WITH ``.
+      REPLACE ALL OCCURRENCES OF `.` IN LS_ZZJ1BNFDOC-NTGEW   WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `.` IN LS_ZZJ1BNFDOC-NFTOT WITH `,`.
+      REPLACE ALL OCCURRENCES OF `,` IN LS_ZZJ1BNFDOC-NFTOT WITH ``.
+"##### AJUSTE DE VALORES #######
+
+"##### AJUSTE DE HORAS #######
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-CRETIM   WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-CHATIM   WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-AUTHTIME WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-HSAIENT  WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-HEMI     WITH ``.
+
+      REPLACE ALL OCCURRENCES OF `/` IN LS_ZZJ1BNFDOC-CRE_TIMESTAMP WITH ``.
+      REPLACE ALL OCCURRENCES OF `:` IN LS_ZZJ1BNFDOC-CRE_TIMESTAMP WITH ``.
+      REPLACE ALL OCCURRENCES OF ` ` IN LS_ZZJ1BNFDOC-CRE_TIMESTAMP WITH ``.
+
+            LV_CRE_TIMESTAMP = LS_ZZJ1BNFDOC-CRE_TIMESTAMP.
+
+      CALL FUNCTION 'TIMESTAMP_DURATION_ADD'
+           EXPORTING
+             TIMESTAMP_IN          = LV_CRE_TIMESTAMP
+             TIMEZONE              = 'UTC'
+             DURATION              = 0
+             UNIT                  = 'S'
+           IMPORTING
+             TIMESTAMP_OUT         = LV_CRE_TIMESTAMP
+           EXCEPTIONS
+             TIMESTAMP_ERROR       = 1
+             OTHERS                = 2
+                    .
+          IF SY-SUBRC <> 0.
+*           Implement suitable error handling here
+          ENDIF.
+
+          LS_ZZJ1BNFDOC-CRE_TIMESTAMP = LV_CRE_TIMESTAMP.
+"##### AJUSTE DE HORAS #######
+
+          <FS_SAIDA>-MANDT                =  SY-MANDT.
+          <FS_SAIDA>-DOCNUM               =  LS_ZZJ1BNFDOC-DOCNUM.
+          <FS_SAIDA>-NFTYPE               =  LS_ZZJ1BNFDOC-NFTYPE.
+          <FS_SAIDA>-DOCTYP               =  LS_ZZJ1BNFDOC-DOCTYP.
+          <FS_SAIDA>-DIRECT               =  LS_ZZJ1BNFDOC-DIRECT.
+          <FS_SAIDA>-DOCDAT               =  LS_ZZJ1BNFDOC-DOCDAT.
+          <FS_SAIDA>-PSTDAT               =  LS_ZZJ1BNFDOC-PSTDAT.
+          <FS_SAIDA>-CREDAT               =  LS_ZZJ1BNFDOC-CREDAT.
+          <FS_SAIDA>-CRETIM               =  LS_ZZJ1BNFDOC-CRETIM.
+          <FS_SAIDA>-CRENAM               =  LS_ZZJ1BNFDOC-CRENAM.
+          <FS_SAIDA>-CHADAT               =  LS_ZZJ1BNFDOC-CHADAT.
+          <FS_SAIDA>-CHATIM               =  LS_ZZJ1BNFDOC-CHATIM.
+          <FS_SAIDA>-CHANAM               =  LS_ZZJ1BNFDOC-CHANAM.
+          <FS_SAIDA>-FORM                 =  LS_ZZJ1BNFDOC-FORM.
+          <FS_SAIDA>-MODEL                =  LS_ZZJ1BNFDOC-MODEL.
+          <FS_SAIDA>-SERIES               =  LS_ZZJ1BNFDOC-SERIES.
+          <FS_SAIDA>-SUBSER               =  LS_ZZJ1BNFDOC-SUBSER.
+          <FS_SAIDA>-NFNUM                =  LS_ZZJ1BNFDOC-NFNUM.
+          <FS_SAIDA>-ENTRAD               =  LS_ZZJ1BNFDOC-ENTRAD.
+          <FS_SAIDA>-FATURA               =  LS_ZZJ1BNFDOC-FATURA.
+          <FS_SAIDA>-ZTERM                =  LS_ZZJ1BNFDOC-ZTERM.
+          <FS_SAIDA>-PRINTD               =  LS_ZZJ1BNFDOC-PRINTD.
+          <FS_SAIDA>-MANUAL               =  LS_ZZJ1BNFDOC-MANUAL.
+          <FS_SAIDA>-FOLLOW               =  LS_ZZJ1BNFDOC-FOLLOW.
+          <FS_SAIDA>-WAERK                =  LS_ZZJ1BNFDOC-WAERK.
+          <FS_SAIDA>-BELNR                =  LS_ZZJ1BNFDOC-BELNR.
+          <FS_SAIDA>-GJAHR                =  LS_ZZJ1BNFDOC-GJAHR.
+          <FS_SAIDA>-BUKRS                =  LS_ZZJ1BNFDOC-BUKRS.
+          <FS_SAIDA>-BRANCH               =  LS_ZZJ1BNFDOC-BRANCH.
+          <FS_SAIDA>-PARVW                =  LS_ZZJ1BNFDOC-PARVW.
+          <FS_SAIDA>-PARID                =  LS_ZZJ1BNFDOC-PARID.
+          <FS_SAIDA>-PARXCPDK             =  LS_ZZJ1BNFDOC-PARXCPDK.
+          <FS_SAIDA>-PARTYP               =  LS_ZZJ1BNFDOC-PARTYP.
+          <FS_SAIDA>-CANCEL               =  LS_ZZJ1BNFDOC-CANCEL.
+          <FS_SAIDA>-CANDAT               =  LS_ZZJ1BNFDOC-CANDAT.
+          <FS_SAIDA>-SUBSEQ               =  LS_ZZJ1BNFDOC-SUBSEQ.
+          <FS_SAIDA>-DOCREF               =  LS_ZZJ1BNFDOC-DOCREF.
+          <FS_SAIDA>-TRATY                =  LS_ZZJ1BNFDOC-TRATY.
+          <FS_SAIDA>-TRAID                =  LS_ZZJ1BNFDOC-TRAID.
+          <FS_SAIDA>-INCO1                =  LS_ZZJ1BNFDOC-INCO1.
+          <FS_SAIDA>-INCO2                =  LS_ZZJ1BNFDOC-INCO2.
+          <FS_SAIDA>-SHPUNT               =  LS_ZZJ1BNFDOC-SHPUNT.
+          <FS_SAIDA>-ANZPK                =  LS_ZZJ1BNFDOC-ANZPK.
+          <FS_SAIDA>-SHPMRK               =  LS_ZZJ1BNFDOC-SHPMRK.
+          <FS_SAIDA>-SHPNUM               =  LS_ZZJ1BNFDOC-SHPNUM.
+          <FS_SAIDA>-BRGEW                =  LS_ZZJ1BNFDOC-BRGEW.
+          <FS_SAIDA>-NTGEW                =  LS_ZZJ1BNFDOC-NTGEW.
+          <FS_SAIDA>-GEWEI                =  LS_ZZJ1BNFDOC-GEWEI.
+          <FS_SAIDA>-ZFBDT                =  LS_ZZJ1BNFDOC-ZFBDT.
+          <FS_SAIDA>-WITHA                =  LS_ZZJ1BNFDOC-WITHA.
+          <FS_SAIDA>-OBSERVAT             =  LS_ZZJ1BNFDOC-OBSERVAT.
+          <FS_SAIDA>-VSTEL                =  LS_ZZJ1BNFDOC-VSTEL.
+          <FS_SAIDA>-NFDEC                =  LS_ZZJ1BNFDOC-NFDEC.
+          <FS_SAIDA>-NFTOT                =  LS_ZZJ1BNFDOC-NFTOT.
+          <FS_SAIDA>-AWSYS                =  LS_ZZJ1BNFDOC-AWSYS.
+          <FS_SAIDA>-PREFNO               =  LS_ZZJ1BNFDOC-PREFNO.
+          <FS_SAIDA>-CHECOD               =  LS_ZZJ1BNFDOC-CHECOD.
+          <FS_SAIDA>-NFE                  =  LS_ZZJ1BNFDOC-NFE.
+          <FS_SAIDA>-NFENUM               =  LS_ZZJ1BNFDOC-NFENUM.
+          <FS_SAIDA>-NFESRV               =  LS_ZZJ1BNFDOC-NFESRV.
+          <FS_SAIDA>-CONTING              =  LS_ZZJ1BNFDOC-CONTING.
+          <FS_SAIDA>-AUTHCOD              =  LS_ZZJ1BNFDOC-AUTHCOD.
+          <FS_SAIDA>-DOCSTAT              =  LS_ZZJ1BNFDOC-DOCSTAT.
+          <FS_SAIDA>-XMLVERS              =  LS_ZZJ1BNFDOC-XMLVERS.
+          <FS_SAIDA>-NFENRNR              =  LS_ZZJ1BNFDOC-NFENRNR.
+          <FS_SAIDA>-CODE                 =  LS_ZZJ1BNFDOC-CODE.
+          <FS_SAIDA>-ANRED                =  LS_ZZJ1BNFDOC-ANRED.
+          <FS_SAIDA>-NAME1                =  LS_ZZJ1BNFDOC-NAME1.
+          <FS_SAIDA>-NAME2                =  LS_ZZJ1BNFDOC-NAME2.
+          <FS_SAIDA>-NAME3                =  LS_ZZJ1BNFDOC-NAME3.
+          <FS_SAIDA>-NAME4                =  LS_ZZJ1BNFDOC-NAME4.
+          <FS_SAIDA>-STRAS                =  LS_ZZJ1BNFDOC-STRAS.
+          <FS_SAIDA>-ORT01                =  LS_ZZJ1BNFDOC-ORT01.
+          <FS_SAIDA>-ORT02                =  LS_ZZJ1BNFDOC-ORT02.
+          <FS_SAIDA>-REGIO                =  LS_ZZJ1BNFDOC-REGIO.
+          <FS_SAIDA>-LAND1                =  LS_ZZJ1BNFDOC-LAND1.
+          <FS_SAIDA>-PSTLZ                =  LS_ZZJ1BNFDOC-PSTLZ.
+          <FS_SAIDA>-PFACH                =  LS_ZZJ1BNFDOC-PFACH.
+          <FS_SAIDA>-PSTL2                =  LS_ZZJ1BNFDOC-PSTL2.
+          <FS_SAIDA>-SORTL                =  LS_ZZJ1BNFDOC-SORTL.
+          <FS_SAIDA>-SPRAS                =  LS_ZZJ1BNFDOC-SPRAS.
+          <FS_SAIDA>-TELF1                =  LS_ZZJ1BNFDOC-TELF1.
+          <FS_SAIDA>-TELFX                =  LS_ZZJ1BNFDOC-TELFX.
+          <FS_SAIDA>-TELTX                =  LS_ZZJ1BNFDOC-TELTX.
+          <FS_SAIDA>-TELX1                =  LS_ZZJ1BNFDOC-TELX1.
+          <FS_SAIDA>-INDUST               =  LS_ZZJ1BNFDOC-INDUST.
+          <FS_SAIDA>-STKZN                =  LS_ZZJ1BNFDOC-STKZN.
+          <FS_SAIDA>-CGC                  =  LS_ZZJ1BNFDOC-CGC.
+          <FS_SAIDA>-CPF                  =  LS_ZZJ1BNFDOC-CPF.
+          <FS_SAIDA>-STAINS               =  LS_ZZJ1BNFDOC-STAINS.
+          <FS_SAIDA>-MUNINS               =  LS_ZZJ1BNFDOC-MUNINS.
+          <FS_SAIDA>-TXJCD                =  LS_ZZJ1BNFDOC-TXJCD.
+          <FS_SAIDA>-HAUSN                =  LS_ZZJ1BNFDOC-HAUSN.
+          <FS_SAIDA>-STOCK                =  LS_ZZJ1BNFDOC-STOCK.
+          <FS_SAIDA>-STREET               =  LS_ZZJ1BNFDOC-STREET.
+          <FS_SAIDA>-HOUSE_NUM1           =  LS_ZZJ1BNFDOC-HOUSE_NUM1.
+          <FS_SAIDA>-HOUSE_NUM2           =  LS_ZZJ1BNFDOC-HOUSE_NUM2.
+          <FS_SAIDA>-IND_IEDEST           =  LS_ZZJ1BNFDOC-IND_IEDEST.
+          <FS_SAIDA>-FOREIGNID            =  LS_ZZJ1BNFDOC-FOREIGNID.
+          <FS_SAIDA>-SMTP_ADDR            =  LS_ZZJ1BNFDOC-SMTP_ADDR.
+          <FS_SAIDA>-AUTHDATE             =  LS_ZZJ1BNFDOC-AUTHDATE.
+          <FS_SAIDA>-AUTHTIME             =  LS_ZZJ1BNFDOC-AUTHTIME.
+          <FS_SAIDA>-BAPI_FLAG            =  LS_ZZJ1BNFDOC-BAPI_FLAG.
+          <FS_SAIDA>-SERV_TP              =  LS_ZZJ1BNFDOC-SERV_TP.
+          <FS_SAIDA>-CTE_STRT_LCT         =  LS_ZZJ1BNFDOC-CTE_STRT_LCT.
+          <FS_SAIDA>-CTE_END_LCT          =  LS_ZZJ1BNFDOC-CTE_END_LCT.
+          <FS_SAIDA>-MAIN_PRODUCT         =  LS_ZZJ1BNFDOC-MAIN_PRODUCT.
+          <FS_SAIDA>-RCVR_WDW             =  LS_ZZJ1BNFDOC-RCVR_WDW.
+          <FS_SAIDA>-PLN_DT_DLV           =  LS_ZZJ1BNFDOC-PLN_DT_DLV.
+          <FS_SAIDA>-FTL_IND              =  LS_ZZJ1BNFDOC-FTL_IND.
+          <FS_SAIDA>-VOL_TRANSP           =  LS_ZZJ1BNFDOC-VOL_TRANSP.
+          <FS_SAIDA>-VOL_UNIT             =  LS_ZZJ1BNFDOC-VOL_UNIT.
+          <FS_SAIDA>-TOTAL_REF_AMT        =  LS_ZZJ1BNFDOC-TOTAL_REF_AMT.
+          <FS_SAIDA>-TRANSP_MODE          =  LS_ZZJ1BNFDOC-TRANSP_MODE.
+          <FS_SAIDA>-CRE_TIMESTAMP        =  LS_ZZJ1BNFDOC-CRE_TIMESTAMP.
+          <FS_SAIDA>-CTE_PARTNER          =  LS_ZZJ1BNFDOC-CTE_PARTNER.
+          <FS_SAIDA>-CTE_SERV_TAKER       =  LS_ZZJ1BNFDOC-CTE_SERV_TAKER.
+          <FS_SAIDA>-CTE_TYPE             =  LS_ZZJ1BNFDOC-CTE_TYPE.
+          <FS_SAIDA>-AUTOM_INCOMING       =  LS_ZZJ1BNFDOC-AUTOM_INCOMING.
+          <FS_SAIDA>-DOCNUM_NEXT          =  LS_ZZJ1BNFDOC-DOCNUM_NEXT.
+          <FS_SAIDA>-DOCNUM_PREV          =  LS_ZZJ1BNFDOC-DOCNUM_PREV.
+          <FS_SAIDA>-MUNICIPAL            =  LS_ZZJ1BNFDOC-MUNICIPAL.
+          <FS_SAIDA>-NATOP                =  LS_ZZJ1BNFDOC-NATOP.
+          <FS_SAIDA>-INDPAG               =  LS_ZZJ1BNFDOC-INDPAG.
+          <FS_SAIDA>-DSAIENT              =  LS_ZZJ1BNFDOC-DSAIENT.
+          <FS_SAIDA>-HSAIENT              =  LS_ZZJ1BNFDOC-HSAIENT.
+          <FS_SAIDA>-CNPJ_BUPLA           =  LS_ZZJ1BNFDOC-CNPJ_BUPLA.
+          <FS_SAIDA>-IE_BUPLA             =  LS_ZZJ1BNFDOC-IE_BUPLA.
+          <FS_SAIDA>-IEST_BUPLA           =  LS_ZZJ1BNFDOC-IEST_BUPLA.
+          <FS_SAIDA>-IEST_PARTNER         =  LS_ZZJ1BNFDOC-IEST_PARTNER.
+          <FS_SAIDA>-IM_BUPLA             =  LS_ZZJ1BNFDOC-IM_BUPLA.
+          <FS_SAIDA>-CNAE_BUPLA           =  LS_ZZJ1BNFDOC-CNAE_BUPLA.
+          <FS_SAIDA>-CNAE_PARTNER         =  LS_ZZJ1BNFDOC-CNAE_PARTNER.
+          <FS_SAIDA>-CRT_BUPLA            =  LS_ZZJ1BNFDOC-CRT_BUPLA.
+          <FS_SAIDA>-CRT_PARTNER          =  LS_ZZJ1BNFDOC-CRT_PARTNER.
+          <FS_SAIDA>-ISUF                 =  LS_ZZJ1BNFDOC-ISUF.
+          <FS_SAIDA>-MODFRETE             =  LS_ZZJ1BNFDOC-MODFRETE.
+          <FS_SAIDA>-PLACA                =  LS_ZZJ1BNFDOC-PLACA.
+          <FS_SAIDA>-UF1                  =  LS_ZZJ1BNFDOC-UF1.
+          <FS_SAIDA>-RNTC                 =  LS_ZZJ1BNFDOC-RNTC.
+          <FS_SAIDA>-VAGAO                =  LS_ZZJ1BNFDOC-VAGAO.
+          <FS_SAIDA>-BALSA                =  LS_ZZJ1BNFDOC-BALSA.
+          <FS_SAIDA>-NFAT                 =  LS_ZZJ1BNFDOC-NFAT.
+          <FS_SAIDA>-VORIG                =  LS_ZZJ1BNFDOC-VORIG.
+          <FS_SAIDA>-VDESC                =  LS_ZZJ1BNFDOC-VDESC.
+          <FS_SAIDA>-VLIQ                 =  LS_ZZJ1BNFDOC-VLIQ.
+          <FS_SAIDA>-UFEMBARQ             =  LS_ZZJ1BNFDOC-UFEMBARQ.
+          <FS_SAIDA>-XLOCEMBARQ           =  LS_ZZJ1BNFDOC-XLOCEMBARQ.
+          <FS_SAIDA>-XNEMP                =  LS_ZZJ1BNFDOC-XNEMP.
+          <FS_SAIDA>-SPRAS_BUPLA          =  LS_ZZJ1BNFDOC-SPRAS_BUPLA.
+          <FS_SAIDA>-IND_EMIT             =  LS_ZZJ1BNFDOC-IND_EMIT.
+          <FS_SAIDA>-COD_SIT              =  LS_ZZJ1BNFDOC-COD_SIT.
+          <FS_SAIDA>-IND_FINAL            =  LS_ZZJ1BNFDOC-IND_FINAL.
+          <FS_SAIDA>-IND_PRES             =  LS_ZZJ1BNFDOC-IND_PRES.
+          <FS_SAIDA>-XLOCDESPACHO         =  LS_ZZJ1BNFDOC-XLOCDESPACHO.
+          <FS_SAIDA>-DCOMPET              =  LS_ZZJ1BNFDOC-DCOMPET.
+          <FS_SAIDA>-CREGTRIB             =  LS_ZZJ1BNFDOC-CREGTRIB.
+          <FS_SAIDA>-RETTRANSP_CFOP       =  LS_ZZJ1BNFDOC-RETTRANSP_CFOP.
+          <FS_SAIDA>-RETTRANSP_CMUNFG     =  LS_ZZJ1BNFDOC-RETTRANSP_CMUNFG.
+          <FS_SAIDA>-IND_BADI_CTRL        =  LS_ZZJ1BNFDOC-IND_BADI_CTRL.
+          <FS_SAIDA>-ID_DEST              =  LS_ZZJ1BNFDOC-ID_DEST.
+          <FS_SAIDA>-HEMI                 =  LS_ZZJ1BNFDOC-HEMI.
+          <FS_SAIDA>-V_TROCO              =  LS_ZZJ1BNFDOC-V_TROCO.
+          <FS_SAIDA>-MOD                  =  LS_ZZJ1BNFDOC-MOD.
+          <FS_SAIDA>-NCOO                 =  LS_ZZJ1BNFDOC-NCOO.
+          <FS_SAIDA>-INDINTERMED          =  LS_ZZJ1BNFDOC-INDINTERMED.
+          <FS_SAIDA>-IDCADINTTRAN         =  LS_ZZJ1BNFDOC-IDCADINTTRAN.
+          <FS_SAIDA>-CNPJINTERMED         =  LS_ZZJ1BNFDOC-CNPJINTERMED.
+          <FS_SAIDA>-SAFRA                =  LS_ZZJ1BNFDOC-SAFRA.
+          <FS_SAIDA>-REF_MONTH_YEAR       =  LS_ZZJ1BNFDOC-REF_MONTH_YEAR.
+          <FS_SAIDA>-QTOTMES              =  LS_ZZJ1BNFDOC-QTOTMES.
+          <FS_SAIDA>-QTOTANT              =  LS_ZZJ1BNFDOC-QTOTANT.
+          <FS_SAIDA>-QTOTGER              =  LS_ZZJ1BNFDOC-QTOTGER.
+          <FS_SAIDA>-VFOR                 =  LS_ZZJ1BNFDOC-VFOR.
+          <FS_SAIDA>-VTOTDED              =  LS_ZZJ1BNFDOC-VTOTDED.
+          <FS_SAIDA>-VLIQFOR              =  LS_ZZJ1BNFDOC-VLIQFOR.
+          <FS_SAIDA>-ITMF_REPDAT          =  LS_ZZJ1BNFDOC-ITMF_REPDAT.
+          <FS_SAIDA>-ITMF_PCO_CATEGORY    =  LS_ZZJ1BNFDOC-ITMF_PCO_CATEGORY.
+          <FS_SAIDA>-PARTR                =  LS_ZZJ1BNFDOC-PARTR.
+          <FS_SAIDA>-NFNUM_UTILITIES      =  LS_ZZJ1BNFDOC-NFNUM_UTILITIES.
+          <FS_SAIDA>-PARTNER_ROLE         =  LS_ZZJ1BNFDOC-PARTNER_ROLE.
+          <FS_SAIDA>-COD_CTA_HEADER       =  LS_ZZJ1BNFDOC-COD_CTA_HEADER.
+          <FS_SAIDA>-ZZAUTH_DOC           =  LS_ZZJ1BNFDOC-ZZAUTH_DOC.
+          <FS_SAIDA>-ZZCOD_DIG            =  LS_ZZJ1BNFDOC-ZZCOD_DIG.
+          <FS_SAIDA>-ZZCHECOD             =  LS_ZZJ1BNFDOC-ZZCHECOD.
+
+    MODIFY J_1BNFDOC FROM TABLE GT_SAIDA.
+    COMMIT WORK AND WAIT.
+    ENDLOOP.
+ENDFORM.
